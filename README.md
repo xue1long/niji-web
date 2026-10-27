@@ -5,6 +5,8 @@
 ## 能力
 
 - 提交生图任务，轮询状态，并发下载原图（webp），批量转 JPG 供聊天窗口内联展示
+- **图生文（describe）** —— 上传图片，反推 4 条提示词（适合复刻喜欢的图）
+- **出图后处理（niji-act）** —— 在已生成的 grid 上做变体 / 重跑 / 改词重混 / 缩小扩图 / 平移扩图 / 改宽高比
 - 读取 / 修改站点生图设置（宽高比、风格化、怪异度、多样性、raw、draft、版本、速度）
 - 站点域名、账号 ID、CDN 地址全部自动探测，不硬编码 —— 换镜像站、换账号都能用
 
@@ -60,6 +62,26 @@ node scripts/niji-gen.mjs "你的提示词" --ar 16:9 --v 8.2 --stylize 150 --we
 | `--no-jpg` | — | 只留 webp 原图，不转 JPG |
 | `--max-w` | 1400 | JPG 最大边 |
 
+图生文（反推提示词）：
+
+```bash
+node scripts/niji-describe.mjs "/path/to/ref.png" --out ./outputs --name ref
+node scripts/niji-describe.mjs "https://cdn-xxx/foo.webp" --json   # 仅输出 JSON
+```
+
+出图后处理（`--job` 用 `niji-gen.mjs` 输出的 job_id，`--index` 为 grid 内 0–3 序号，U1=0 … U4=3）：
+
+```bash
+node scripts/niji-act.mjs vary   --job <job_id> --index 0 --strong
+node scripts/niji-act.mjs reroll --job <job_id>
+node scripts/niji-act.mjs remix  --job <job_id> --index 0 --prompt "..."
+node scripts/niji-act.mjs zoom   --job <job_id> --index 0 --factor 2
+node scripts/niji-act.mjs pan    --job <job_id> --index 0 --dir up
+node scripts/niji-act.mjs ar     --job <job_id> --index 0 --ar 16:9
+```
+
+> `zoom` / `pan` / `ar` 省略 `--prompt` 时，自动拉取父 grid 的 `full_command` 作为新提示词。
+
 改设置：
 
 ```bash
@@ -83,8 +105,19 @@ node scripts/niji-settings.mjs reset
 - Cookie 会过期（表现为 401），重新执行首次配置即可刷新
 - 每次生图都会在用户画廊留下记录。清理测试任务请用站点 UI 的 Trash 按钮
 
+## 已知限制（镜像站）
+
+| 功能 | 状态 |
+|---|---|
+| Vary / Reroll / Remix / Zoom Out / Pan / AR | ✅ 可用 |
+| **U1–U4 放大（upscale）** | ❌ 不可用 —— 代理服务端缺陷（`prompt.replaceAll is not a function`，与载荷无关，无法绕过） |
+| 局部重绘（repaint） | ⚠️ 实验性，未实测通过 |
+| 多图融合 blend / Shorten 提示词精简 | ❌ 该站未开放 |
+
+完整说明见 `SKILL.md` 的「已知功能边界」与 `references/api.md`。
+
 ## 文档
 
-- `references/api.md` —— API 契约、合法 prompt flag 全集、性能实测
+- `references/api.md` —— API 契约、后处理载荷、合法 prompt flag 全集、性能实测
 - `references/settings.md` —— 设置字段与 prompt 参数映射、localStorage 结构
 - `references/troubleshooting.md` —— 踩坑清单与诊断顺序
