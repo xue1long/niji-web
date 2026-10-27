@@ -1,0 +1,8 @@
+# 会话 Cookie 与本地配置，不得提交
+niji-web.config.json
+niji-web.cookie.txt
+
+# 输出目录
+outputs/
+*.webp
+*.jpg
